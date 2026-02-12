@@ -14,12 +14,15 @@ data(wagepan)                              # 545 workers × 8 years (1980-87)
 wagepan <- wagepan %>% arrange(nr, year)   # keep rows in tidy panel order
 wagepan <- wagepan %>% filter(year <= 1983) # Just use 4 years (1980-'83) to simplify analysis
 
-## Add a numeric time index t = 1 … 3 (1980 --> 1, ..., 1983 --> 4)
+## Add a numeric time index t = 1,2,3,4 (1980 --> 1, ..., 1983 --> 4)
 wagepan <- wagepan %>%
   mutate(t = year - min(year) + 1)
 
 # Load development branch from lmtp
-devtools::install_github("alecmcclean/lmtp@flip", force = T)
+remotes::install_url(
+  "https://github.com/alecmcclean/lmtp/archive/refs/heads/flip.tar.gz",
+  force = TRUE
+)
 library(lmtp)
 
 ## --------------------------------------------------
@@ -126,7 +129,7 @@ cat("Denominator (per-timepoint average change in treatments) estimate: ", pt_es
 
 pt_est <- res$estimate@x
 sd_est <- sd(res$ifvalues) / sqrt(nrow(dat))
-cat("Overall point estimate:ß", pt_est, 
+cat("Overall point estimate:", pt_est, 
     "\n95% CI: ", pt_est - qnorm(0.975) * sd_est, pt_est + qnorm(0.975) * sd_est)
 
 # 1) Plot of propensity scores at each timepoint
@@ -145,6 +148,26 @@ prop_score_plot <- prop_plot_dat %>%
 ggsave("../figures/wage-prop-score-box.png",
        plot = prop_score_plot,
        width = 8, height = 4)
+
+
+# Compare bottom decile versus the rest
+index <- which(prop_plot_dat$`4` <= quantile(prop_plot_dat$`4`, 0.1))
+
+num_summary <- function(df) {
+  sapply(df, function(x) c(
+    Mean   = mean(x, na.rm = TRUE)
+  ))
+}
+
+num_cols <- sapply(wagepan, is.numeric)
+
+s1 <- num_summary(wagepan[!(wagepan$nr %in% ids) & wagepan$year <= 1983, num_cols])
+s2 <- num_summary(wagepan[wagepan$nr %in% ids & wagepan$year <= 1983, num_cols])
+
+s2 %>% data.frame %>% rename("bottom" = ".") %>%
+  bind_cols(s1 %>% data.frame %>% rename("top" = ".")) %>%
+  mutate(diff = bottom - top) %>%
+  arrange(-diff)
 
 # 2) Plot with difference in treatments and their 95% CI
 trt_diff_plot <- res$auxiliary_info$trt_diff_info %>%

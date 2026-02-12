@@ -149,25 +149,29 @@ ggsave("../figures/wage-prop-score-box.png",
        plot = prop_score_plot,
        width = 8, height = 4)
 
+prop_plot_dat |>
+  pivot_longer(cols = all_of(colnames(cum_prod_props))) %$%
+  by(value, name, summary)
 
-# Compare bottom decile versus the rest
-index <- which(prop_plot_dat$`4` <= quantile(prop_plot_dat$`4`, 0.1))
+# 2) Cumulative product of propensity scores to each timepoint
+cum_prod_props <- t(apply(prop_plot_dat, 1, cumprod)) |> as.data.frame()
+cum_prod_plot <- cum_prod_props %>%
+  pivot_longer(cols = all_of(colnames(cum_prod_props))) %>%
+  ggplot(aes(x = name, y = value)) + 
+  geom_boxplot() + 
+  theme_clean() +
+  scale_y_continuous(breaks = seq(0, 1, 0.25),
+                     limits = c(0,1)) + 
+  labs(x = "Timepoint",
+       y = "Cumulative propensity score product distribution")
 
-num_summary <- function(df) {
-  sapply(df, function(x) c(
-    Mean   = mean(x, na.rm = TRUE)
-  ))
-}
+ggsave("../figures/wage-prop-score-box.png",
+       plot = cum_prod_plot,
+       width = 8, height = 4)
 
-num_cols <- sapply(wagepan, is.numeric)
-
-s1 <- num_summary(wagepan[!(wagepan$nr %in% ids) & wagepan$year <= 1983, num_cols])
-s2 <- num_summary(wagepan[wagepan$nr %in% ids & wagepan$year <= 1983, num_cols])
-
-s2 %>% data.frame %>% rename("bottom" = ".") %>%
-  bind_cols(s1 %>% data.frame %>% rename("top" = ".")) %>%
-  mutate(diff = bottom - top) %>%
-  arrange(-diff)
+cum_prod_props |> 
+  pivot_longer(cols = all_of(colnames(cum_prod_props))) %$%
+  by(value, name, summary)
 
 # 2) Plot with difference in treatments and their 95% CI
 trt_diff_plot <- res$auxiliary_info$trt_diff_info %>%

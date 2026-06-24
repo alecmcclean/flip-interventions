@@ -21,6 +21,9 @@ p_load(magrittr,
 options(stringsAsFactors = F)
 
 # Set working directory here
+# NOTE: The following two lines require RStudio. If running outside RStudio,
+# comment them out and set your working directory manually, e.g.:
+# setwd("/path/to/code")
 this_file <- rstudioapi::getSourceEditorContext()$path
 setwd(dirname(this_file))
 

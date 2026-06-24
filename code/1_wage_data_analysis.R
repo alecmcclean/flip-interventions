@@ -149,10 +149,6 @@ ggsave("../figures/wage-prop-score-box.png",
        plot = prop_score_plot,
        width = 8, height = 4)
 
-prop_plot_dat |>
-  pivot_longer(cols = all_of(colnames(cum_prod_props))) %$%
-  by(value, name, summary)
-
 # 2) Cumulative product of propensity scores to each timepoint
 cum_prod_props <- t(apply(prop_plot_dat, 1, cumprod)) |> as.data.frame()
 cum_prod_plot <- cum_prod_props %>%
@@ -165,11 +161,15 @@ cum_prod_plot <- cum_prod_props %>%
   labs(x = "Timepoint",
        y = "Cumulative propensity score product distribution")
 
-ggsave("../figures/wage-prop-score-box.png",
+ggsave("../figures/wage-cum-prod-box.png",
        plot = cum_prod_plot,
        width = 8, height = 4)
 
-cum_prod_props |> 
+cum_prod_props |>
+  pivot_longer(cols = all_of(colnames(cum_prod_props))) %$%
+  by(value, name, summary)
+
+prop_plot_dat |>
   pivot_longer(cols = all_of(colnames(cum_prod_props))) %$%
   by(value, name, summary)
 
